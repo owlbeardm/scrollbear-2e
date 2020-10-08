@@ -1,1 +1,10 @@
-[]
+[,{
+    "name": "Magic Aura",
+    "lvl": "Spell 1",
+    "traits": [
+        "Uncommon",
+        "Illusion"
+    ],
+    "description": "You alter the appearance of an item's magic aura. You can choose to have the target's aura appear as that of common magic item of twice _magic aura_'s level or lower, or to have it register as being under the effects of a spell of your choice of _magic aura_'s level or lower. If the target is magical, you can instead choose to have it appear as entirely non-magical.  \n  \nA caster using [_detect magic_](Spells.aspx?ID=66) or [_read aura_](Spells.aspx?ID=246) of an equal or higher spell level can attempt to disbelieve the illusion from _magic aura_. _Magic aura_ doesn't mask the aura of spells that are 9th level or higher or of items that are 19th level or higher.",
+    "url": "https://2e.aonprd.com/Spells.aspx?ID=177"
+}]

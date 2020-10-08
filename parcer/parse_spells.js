@@ -18,7 +18,7 @@ async function main() {
     let s = 0;
     let f = 0;
     spellhtmls.forEach((spellsHtml, index) => {
-      if (index > 0) {
+      if (index != 177) {
         return;
       }
       logSuccess("Started", index);
@@ -67,58 +67,13 @@ async function main() {
 }
 main();
 
-// Name
 function removeATag(data) {
-  if (data.includes("<")) {
-    const parsedData = parse("<p>" + data + "</p>");
-    return parsedData.text.trim();
+  if (data.includes('<a')) {
+    console.log(data)
+    // const parsedData = parse('<p>' + data + '</p>');
+    // return parsedData.text;
   }
   return data;
-}
-// School
-function parseSpellSchool(data) {
-  const school1 = /(.*?)\(/g;
-  const school2 = /(.*?)\[/g;
-  let schoolVar;
-  if (data.includes("(")) {
-    schoolVar = data.match(school1)[0];
-    schoolVar = schoolVar.substring(0, schoolVar.length - 1);
-  } else if (data.includes("[")) {
-    schoolVar = data.match(school2)[0];
-    schoolVar = schoolVar.substring(0, schoolVar.length - 1);
-  } else {
-    schoolVar = data;
-  }
-  return schoolVar
-    .replace('">', "")
-    .replace("</a>", "")
-    .replace(";", "")
-    .trim();
-}
-//   (Subschool)
-function parseSpellSubschool(data) {
-  const subschool = /\((.*?)\)/g;
-  const subschoolA = /\(<a(.*?)">(.*?)<\/a>\)/g;
-  const subschoolA2 = />(.*?)<\/a>\)/g;
-  const subschoolVar = data.match(subschool);
-  if (subschoolVar)
-    return removeATag(
-      subschoolVar[0].substring(1, subschoolVar[0].length - 1).trim()
-    );
-}
-//   [Descriptor]
-function parseSpellDescriptor(data) {
-  const descripters = /\[(.*?)\]/g;
-  const descriptersA = /\[<a(.*?)">(.*?)<\/a>\]/g;
-  const descriptersA2 = />(.*?)</g;
-  const descriptersVar = data.match(descripters);
-  if (descriptersVar)
-    return descriptersVar[0]
-      .substring(1, descriptersVar[0].length - 1)
-      .split(",")
-      .map((value) => {
-        return removeATag(value.trim());
-      });
 }
 
 function addValue(spell, child, nextChild, name, key) {
@@ -262,53 +217,76 @@ function changeName(name) {
 }
 
 function parseSpellPage(rootVar) {
+  let state = "NAME";
   const result = [];
-  let span = [...rootVar.querySelectorAll("span")].find((element) => {
+  let span = [...rootVar.childNodes].filter((element) => {
     return !!element.innerHTML;
   });
 
-  rootVar.childNodes.forEach((rchild, index, elements) => {
+  span.forEach((rchild, index, elements) => {
+    let spell = {};
+    let description = "<div>";
+    let traits = [];
+
     rchild.childNodes.forEach((child, index, elements) => {
-      console.log(child.toString());
-      // console.log("1");
+      if (state != "DESCRIPTION" && child.structure == "hr") {
+        state = "DESCRIPTION";
+        return;
+      }
+      if (state == "DESCRIPTION" && child.structure == "hr") {
+        state = "HEIGHTENED";
+        return;
+      }
+
+      switch (state) {
+        case "NAME":
+          // console.log(child.innerHTML);
+          if (!child.structure && child.toString()) {
+            spell.name = child.toString();
+            state = "SPELLLVL";
+          }
+          break;
+        case "SPELLLVL":
+          if (
+            child.structure &&
+            child.structure.startsWith("span") &&
+            child.getAttribute("style") == "float:right;"
+          ) {
+            spell.lvl = child.text;
+            state = "TRAITS";
+          }
+          break;
+        case "TRAITS":
+          // console.log(child.toString());
+          // console.log(child.structure);
+          // console.log(child.innerHTML);
+          // console.log(child.text);
+          // console.log("\n\t***");
+          if (
+            child.structure &&
+            child.getAttribute("class") &&
+            child.getAttribute("class").startsWith("trait")
+          ) {
+            traits.push(child.text);
+          } else if (child.structure && child.structure.startsWith("br")) {
+            spell.traits = traits;
+            state = "SOURCE";
+          } else {
+
+          }
+          break;
+        case "DESCRIPTION":
+          description = description + removeATag(child.toString());
+          break;
+        default:
+          logError(`Undefined state ${state}.`);
+      }
     });
-    // if (!source && child.toString() == "<b>Source</b>") {
-    //   let valueAdded = '<div>';
-    //   for (let i = index + 1; i < elements.length; i++) {
-    //     if (elements[i].toString() == "<b>School</b>")
-    //       break;
-    //     valueAdded += elements[i].toString();
-    //   }
-    //   valueAdded += '</div>';
-    //   source = turndownService.turndown(parse(valueAdded).toString());
-    // }
+    spell.description = `${description}</div>`;
+    spell.description = turndownService.turndown(spell.description);
+    console.log(spell);
+    result.push(spell);
   });
-  /*
-  logSuccess(rootVar.querySelector('#main-wrapper').querySelectorAll('span'));
-  
-  let source;
-  
-  span.childNodes.forEach((child, index, elements) => {
-    if (child.innerHTML && child.tagName === 'h1') {
-      let valueAdded = '<div>';
-      for (let i = index; i < elements.length; i++) {
-        valueAdded += elements[i].toString();
-      }
-      valueAdded += '</div>';
-      value = parse(valueAdded);
-      // console.log(valueAdded);
-      const spell = {};
-      spell.name = changeName(child.text.trim());
-      populateSpell(value, spell);
-      findDescription(value, spell);
-      if (!spell.source) {
-        spell.source = source;
-      }
-      result.push(spell);
-    }
-  });
-  // console.log(JSON.stringify(result));
-  */
   return result;
 }
 
